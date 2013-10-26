@@ -1,4 +1,10 @@
-from BeautifulSoup import BeautifulSoup
+##########################################################################
+######Scripts for fetching, processing and pushing kissinger related data
+######from the FOIA gov'v site
+######foia.state.gov/Search/Results.aspx?collection=KISSINGER&searchText=*
+##########################################################################
+
+
 import urllib2
 import re
 import simplejson as json
@@ -19,7 +25,11 @@ from declass.utils.filefilter import get_paths
 
 ####yaml file containing login data
 login_file = os.getenv("HOME") + '/.declass_db'
-col_to_json_dict = {'subject': 'subject', 'date': 'docDate', 'year': 'docDate', 'doc_id': 'pdfLink'}
+
+#### Dictionary for converting from table column name to corresponding json
+#### master file key
+col_to_json_dict = {'subject': 'subject', 'date': 'docDate', 'year': 'docDate', 
+'doc_id': 'pdfLink', 'time': 'subject', 'names': 'subject'}
 
 def get_data(master_url, master_load_path=None, master_save_path=None,
         MYDATA_dir=None, n_jobs=7, chunksize=100):
@@ -63,9 +73,27 @@ def push_data(master_url, master_load_path=None, master_save_path=None,
     update_table(results_json, cursor)
 
 
-def update_column(master_url, col_name, master_load_path=None, master_save_path=None,
-        table_name='Kissinger', MYDATA_dir=None, 
+def update_column(master_url, col_name, master_load_path=None,
+        master_save_path=None, table_name='Kissinger', MYDATA_dir=None, 
         fails_file='/tmp/Kissinger_fails.txt', limit=None):
+    """
+    Updates columns in DB tables. Note the col_name you provide should hava a 
+    corresponding _parse_col_name() which returns the values to be inserted. 
+    Parameters
+    ----------
+    master_url : str
+        url for kissinger data json
+    master_load_path : str
+        if provided will load the json from disk
+    master_save_path : str
+        if provided will save json to disk
+    MYDATA_dir : str
+        base dir for kissnger data (should have 'raw' and 'processed' as sub dirs)
+    table_name : str
+    fails_file : str
+        Path to file to contain doc_ids for caught exceptions
+    limit : int or None
+    """
     master_json = get_master_json(master_url, master_load_path, master_save_path)
     results_json = master_json['Results']
     results_json = results_json[:limit]
@@ -342,7 +370,7 @@ if __name__ == "__main__":
     master_path = os.path.join(MYDATA, 'master_doc_data.json')
     #get_data(master_url, master_load_path=master_path)
     #push_data(master_url, master_load_path=master_path)
-    update_column(master_url, 'date',  master_load_path=master_path, limit=None)
+    update_column(master_url, 'names',  master_load_path=master_path, limit=None)
 
 
     
