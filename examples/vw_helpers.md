@@ -69,11 +69,18 @@ Quick test of VW on this `sfile`
 --------------------------------
 
     rm -f *cache
-    vw --lda 5 --cache_file doc_tokens.cache --passes 10 -p prediction.dat --readable_model topics.dat --bit_precision 16 doc_tokens.vw
+    vw --lda 5 --cache_file doc_tokens.cache --passes 10 -p prediction.dat --readable_model topics.dat --bit_precision 16 --lda_D $(wc -l doc_tokens.vw | cut -d' ' -f1) --lda_rho 0.1 --lda_alpha 1 doc_tokens.vw
 
 * The call `vw --lda 5` means run LDA and use 5 topics.
-* The `--cache_file` option means "during the first pass, convert the input to a binary 'cached' format and use that for subsequent results.  The `rm -f *cache` is important since if you don't erase the cache file, `VW` will re-use the old one, even if you specify a new input file!
-* The `--bit_precision 16` option means: "Use 16 bits of precision" when [hashing][hashing] tokens.  This will cause many collisions but won't effect the results much at all.  Vowpal Wabbit is *very* sensitive to bit precision!  If you make it bigger, you need many more passes to get decent results.
+* The final argument, `doc_tokens.vw` is our input file.  Alternatively this could be piped in.
+* The `--cache_file` option means "during the first pass, convert the input to a binary 'cached' format and use that for subsequent results.  The `rm -f *cache` is important since if you don't erase the cache file, `VW` will re-use the old one, even if you specify a new input file!  Alternatively, you can pass the `-k` flag to "kill the cache file."
+* `--passes 10` means do 10 passes
+* `-p prediction.dat` stores the predictions (topic weights for each doc) in the file `prediction.dat`
+* `--readable_model topics.dat` stores the word-topic weights in the file `topics.dat`
+* The `--bit_precision 16` option means: "Use 16 bits of precision" when [hashing][hashing] tokens.  This will cause many collisions but won't effect the results much at all.
+* `--lda_D 100` means, "we will see 100 unique documents."  `--lda_D $(wc -l doc_tokens.vw | cut -d' ' -f1)` says, "the number of unique documents we will see is the same as the number of lines in the file `doc_tokens.vw`.  If this is too low, the prior has too much of an effect.  If this is too high, the prior does nothing.
+* `--lda_rho` is the prior parameter controlling word probabilities (== 1 if you expect a flat distribution of words).  We set it to 0.1 since most words appear not very often.
+* `--lda_alpha` is the prior parameter controlling topic probabilities (== 1 if you expect a flat distribution of topics).
 * See [this slideshow][vwlda] about LDA in VW, and [this slideshow][vwtricks] for some VW technical tricks.
 
 This produces two files:
@@ -133,7 +140,7 @@ It is very important that the bit precision for VW, set with `--bit_precision 16
 
 
 ### Step 2b:  Filter "on the fly" using a saved `sff`
-The workflow in step 2a requires making the intermediate file `doc_tokens_filtered.vw`.  Keeping track of all these filtered outputs is an issue.  Since you already need to keep track of a saved sff, you might as well use that as your [one and only one][spot] reference.
+The workflow in step 2a requires making the intermediate file `doc_tokens_filtered.vw`.  Keeping track of all these filtered outputs is an issue.  If you already need to keep track of a saved sff, you might as well use that as your [one and only one][spot] reference.
 
 ```
 rm -f *cache
