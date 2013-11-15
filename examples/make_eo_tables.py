@@ -14,8 +14,7 @@ This executable does the following:
     2. Cleans and reads in this data to DataFrame
 """
 def main():
-    #paths = glob.glob("DDRS/ddrs/(0-9)*/*")
-    parser = argparse.ArgumentParser(description='Description of your program')
+    parser = argparse.ArgumentParser(description='Make EO tables')
     parser.add_argument('pickled_paths')
     parser.add_argument('grep_out_path')
     parser.add_argument('eo_out_path')
@@ -23,9 +22,7 @@ def main():
 
     args = vars(parser.parse_args())
 
-    paths = pickle.load(open('../data/paths.pickle', 'r'))
-    #paths = glob.glob("../data/ddrs/*/*")
-
+    paths = pickle.load(open(args['pickled_paths'], 'r'))
     with open(args['grep_out_path'], 'w') as grep_out:
         for line in grep(paths, "E.O."):
             grep_out.write(line)
