@@ -93,6 +93,22 @@ def _update_table(db, doc_num, dt, table_name='CableDatetime'):
     db.run_query(sql)
 
 
+def get_body(cable):
+    """
+    Retrives the cable text body. 
 
+    Parameters
+    ----------
+    cables : str
+        cable text
 
+    Returns
+    -------
+    list of strings
+        cable body paragraphs
+    """
+    cable = re.sub(r'(\n{,2}[A-Z]+|)\n+PAGE.*\n+', ' ', cable)
+    cable = re.sub(r'\n([ A-Z\(\)"])', ' \g<1>', cable)
+    return re.findall(r'\d\..*', cable)
+    
 
