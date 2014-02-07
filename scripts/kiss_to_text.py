@@ -12,7 +12,7 @@ from declass.utils.database import DBCONNECT
 # Set paths
 # You should have your own login_file somewhere.  
 # DO NOT commit this to the (public) repository!
-login_file = os.path.join('/home/langmore/lib/declass/', 'conf', 'db_login.yml')
+login_file = os.path.join('/users/danielkrasner/', '.declass_db')
 RAW = os.path.join(os.getenv('DATA'), os.getenv('ME'), 'kiss-01/raw')
 bodyfiles_basepath = os.path.join(RAW, 'bodyfiles')
 metafile_path = os.path.join(RAW, 'meta', 'meta.csv')
