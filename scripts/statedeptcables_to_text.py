@@ -1,5 +1,5 @@
 """
-Use the database module to extract kissinger files to text
+Use the database module to extract cable table data to text
 """
 import os
 import yaml
@@ -12,11 +12,13 @@ from declass.utils.database import DBCONNECT
 # Set paths
 # You should have your own login_file somewhere.  
 # DO NOT commit this to the (public) repository!
-CONF = os.path.join(os.getenv('DECLASS'), '../conf')
-login_file = os.path.join(CONF, 'db_login.yml')
-RAW = os.path.join(os.getenv('DATA'), os.getenv('ME'), 'cables-full-01/raw')
+#CONF = os.path.join(os.getenv('DECLASS'), '../conf')
+login_file = os.path.join(os.getenv('HOME'), '.declass_db')
+CABLES = os.path.join(os.getenv('DATA'), os.getenv('ME'), 'declass', 'cables-full-01')
+RAW = os.path.join(CABLES, 'raw')
+META = os.path.join(CABLES, 'meta')
 bodyfiles_basepath = os.path.join(RAW, 'bodyfiles')
-metafile_path = os.path.join(RAW, 'meta', 'meta.csv')
+metafile_path = os.path.join(META, 'meta.csv')
 
 # Get login info
 login_info = yaml.load(open(login_file))
@@ -32,25 +34,24 @@ fields = ['doc_nbr', 'concepts', 'date', 'msgfrom', 'office', 'origclass', 'orig
 fields = [f.lower() for f in fields]
 meta_fields = [f for f in fields if f != 'msgtext']
 
+limit = 5000000
 records = dbCon.run_query(
     'select %s '
     'from statedeptcables '
-     'limit 5000000;' % ', '.join(fields))
+     'limit %s;' % (', '.join(fields), limit))
 
 # Write records to disk
 meta = {f: [] for f in meta_fields}
 meta['doc_id'] = []
 meta['has_text'] = []
 
-
-for rec in records:
+for i, rec in enumerate(records):
     doc_id = rec['doc_nbr'].replace(' ', '_')
 
     # Append meta
     meta['doc_id'].append(doc_id)
     for field in meta_fields:
         meta[field].append(rec[field])
-
     # Write the body text
     if rec['msgtext']:
         filepath = os.path.join(bodyfiles_basepath, doc_id + '.txt')
@@ -60,6 +61,7 @@ for rec in records:
     else:
         meta['has_text'].append(0)
 
+    if i%10000==0: print 'done with %s \n'%i
 
 meta = pd.DataFrame(meta)
 meta.to_csv(metafile_path, sep='|', index=False)
