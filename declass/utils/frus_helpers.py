@@ -64,15 +64,47 @@ def parse_xml(text, section_tag='div', name_tag='persName'):
     doc_dict = defaultdict(lambda : [])
     #doc_dict = __create_sections_dict(sections)
     for sec in sections:
-        sec_id = sec.attrs['xml:id']
-        sec_id = __clean_sec_id(sec_id)
-        sec_text = sec.get_text()
-        sec_names = _get_name_ids(sec, sec_id)
-        sec_datetime = _get_datetime(sec)
-        sec_dict = {'text': sec_text, 'name_ids': sec_names, 
-                'date': sec_datetime}
+        raw_sec_id = sec.attrs['xml:id']
+        #if raw_sec_id=='sources':
+        #    import pdb; pdb.set_trace()
+        sec_id = __clean_sec_id(raw_sec_id)
+        sec_dict = _create_sec_dict(sec, raw_sec_id, sec_id)
         doc_dict[sec_id].append(sec_dict)
     return doc_dict
+
+def _create_sec_dict(section, raw_sec_id, sec_id):
+    sec_dict = {}
+    sec_dict['text'] = section.get_text()
+    #check if the section is a doc
+    if re.search(r'd\d+', raw_sec_id):
+        sec_names = _get_name_ids(section, sec_id)
+        sec_dict['name_ids'] = sec_names
+    ##check is section is a terms section
+    if raw_sec_id in ['terms','persons']:
+        sec_dict['info'] = _parse_terms(section, raw_sec_id)
+    sec_dict['date'] = _get_datetime(section)
+    return sec_dict
+
+def _parse_terms(section, raw_sec_id):
+    """
+    Parses terms 
+    """
+    terms_list = []
+    items = section.findAll('item')
+    if raw_sec_id=='terms':
+        item_key = 'term'
+    elif raw_sec_id=='persons':
+        item_key = 'persName'
+    for i in items:
+        term = i.find(item_key)
+        term_id = term.attrs['xml:id']
+        term_text =  re.sub(r'\n\s+',' ', i.getText().strip()).split(',')
+        term_short = term_text[0]
+        term_long = ','.join(term_text[1:])
+        terms_list.append({'term_id':term_id, 'term_short':term_short, 
+            'term_long':term_long}) 
+    return terms_list
+
 
 def __clean_sec_id(sec_id):
     return re.sub('d\d+', 'documents', sec_id) 
@@ -117,6 +149,7 @@ if __name__=="__main__":
 
     with open(frus1) as f:
         frus1_data = f.read()
+    import pdb; pdb.set_trace()
     parsed_xml = parse_xml(frus1_data)
 
     
