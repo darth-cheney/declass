@@ -6,6 +6,100 @@ from bs4 import BeautifulSoup
 from unidecode import unidecode
 from collections import defaultdict
 
+######################################EPUB BOOKS#############################
+#The following functions are for parsing the html wrapped inside the *.epub files
+#coming from http://history.state.gov/historicaldocuments/ebooks
+#note: epub is simply a zip archive of html files; you can take a epub file and 
+#unzip it into a nice directory srtructure and parse the individual fieles with the 
+#functions below
+
+def parse_html_persons(html_file):
+    """
+    Parses persons.html from epub.
+
+    Parameters
+    ----------
+    html_file : open file obj
+    """
+    names_list = []
+    html = html_file.read()
+    html = html.decode('ascii', 'ignore')
+    soup = BeautifulSoup(html)
+    lines = soup.findAll('li')
+    for line in lines:
+        name_tag = line.findAll('span', 'tei-persName')
+        if len(name_tag) is not 1: continue
+        last_name, first_name = name_tag[0].getText().split(',')[:2]
+        try:
+            suffix = ','.join(name_tag[0].getText().split(',')[2:])
+        except IndexError:
+            suffix = None
+        last_name = str(last_name.strip())
+        first_name = str(first_name.strip())
+        description = re.findall(r'</strong>(.*)</li>$', str(line))[0].strip()
+        names_list.append(
+                {'last': last_name, 'first': first_name, 
+                    'suffix': suffix, 'description': description})
+    return names_list
+
+
+    
+def parse_html_preface(html_file):
+    """
+    Parses preface.html from epub.
+
+    Parameters
+    ----------
+    html_file : open file obj
+    """
+    html = html_file.read()
+    html = html.decode('ascii', 'ignore')
+    soup = BeautifulSoup(html)
+    return {'text': soup.getText(), 'html': html}
+
+
+def parse_html_title(html_file):
+    """
+    Parses title.html from epub.
+
+    Parameters
+    ----------
+    html_file : open file obj
+    """
+    html = html_file.read()
+    html = html.decode('ascii', 'ignore')
+    soup = BeautifulSoup(html)
+    title = ' '.join([item.getText() for item in soup.findAll('h3')])
+    title = re.sub(r'(\d{4})(\d{4})', r'\1-\2', title)
+    editors = '; '.join([item.getText() for item in soup.findAll('dd')])
+    date = re.findall(r'(\d{4})\n', soup.getText())[0]
+    return {'title': title, 'editors':editors, 'date':date}
+
+
+def parse_html_terms(html_file):
+    """
+    Parses terms.html from epub.
+
+    Parameters
+    ----------
+    html_file : open file obj
+    """
+    html = html_file.read()
+    html = html.decode('ascii', 'ignore')
+    soup = BeautifulSoup(html)
+    terms_list = []
+    for term in soup.findAll('li'):
+        term_id =  term.find('span').attrs['id']
+        text =  term.getText().split(',')
+        acronym = text[0].strip()
+        defin = ''.join(text[1:]).strip()
+        terms_list.append({'id':term_id, 'acronym': acronym, 'def': defin})
+    return terms_list
+
+###########################################################################
+
+
+
 def _get_tag_attrs(soup, tag='div'):
     """
     Takes a BeautifulSoup object and returns a list of tag attributes.
@@ -43,6 +137,7 @@ def get_doc_sections(text, tag='div'):
     text = unidecode(text)
     soup = BeautifulSoup(text, 'xml')
     return soup.findAll(tag)
+
 
 def parse_xml(text, section_tag='div', name_tag='persName'):
     """
@@ -145,11 +240,18 @@ if __name__=="__main__":
     FRUS = os.path.join(DATA, 'declass', 'frus')
     RAW = os.path.join(FRUS, 'raw')
 
-    frus1 = os.path.join(RAW, 'frus1969-76v01.xml')
+    #frus1 = os.path.join(RAW, 'frus1969-76v01.xml')
 
-    with open(frus1) as f:
-        frus1_data = f.read()
-    import pdb; pdb.set_trace()
-    parsed_xml = parse_xml(frus1_data)
-
+    #with open(frus1) as f:
+    #    frus1_data = f.read()
+    #parsed_xml = parse_xml(frus1_data)
+    persons = open(os.path.join(RAW, 'frus1958-60v04/OEBPS', 'persons.html'))
+    preface = open(os.path.join(RAW, 'frus1958-60v04/OEBPS', 'preface.html'))
+    title = open(os.path.join(RAW, 'frus1958-60v04/OEBPS', 'title.html'))
+    terms = open(os.path.join(RAW, 'frus1958-60v04/OEBPS', 'terms.html'))
     
+    import pdb; pdb.set_trace()
+    parsed_persons = parse_html_persons(persons)
+    parsed_preface = parse_html_preface(preface)
+    parsed_title = parse_html_title(title)
+    parsed_terms = parse_html_terms(terms)
