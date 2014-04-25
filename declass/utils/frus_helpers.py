@@ -49,10 +49,11 @@ def parse_epub_books(base_dir, exclude_names=['frus-history']):
     vol_names = [name for name in os.listdir(base_dir) if 
             os.path.isdir(name) and name not in exclude_names]
     vol_dict = {}
-    for i, vol_name in enumerate(vol_names):
+    for i, vol_name in enumerate(vol_names[:2]):
         vol_dict[vol_name] = parse_epub_book(base_dir, vol_name)
         print 'done with %s, %s volumes left'%(
                 vol_name, len(vol_names)-i-1) 
+    return vol_dict
 
 def parse_epub_book(base_dir, vol_name):
     """
@@ -90,7 +91,11 @@ def parse_epub_book(base_dir, vol_name):
     parsed_title = parse_html_title(title)
     parsed_terms = parse_html_terms(terms)
     parsed_refs = parse_html_refs(refs, id_prefix=vol_name)
-    parsed_docs = parse_html_docs(docs, parsed_persons.index, 
+    try:
+        person_keys = parsed_persons.index
+    except AttributeError:
+        person_keys = None
+    parsed_docs = parse_html_docs(docs, person_keys, 
             id_prefix=vol_name)
     return {'persons': parsed_persons, 'preface': parsed_preface, 
             'title': parsed_title, 'terms': parsed_terms, 'refs': parsed_refs,
@@ -485,9 +490,11 @@ def __create_sections_dict(sections):
 if __name__=="__main__":
     ###for experimention
     import os
+
     DATA = os.getenv("DATA")
     FRUS = os.path.join(DATA, 'declass', 'frus')
     RAW = os.path.join(FRUS, 'raw')
+    PROCESSED = os.path.join(FRUS, 'processed')
     
     #parsed_vol = parse_epub_book(RAW, 'frus1958-60v04')
     #parsed_vol = parse_epub_book(RAW, 'frus1958-60v10p1')
