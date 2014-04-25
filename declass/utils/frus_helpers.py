@@ -84,7 +84,7 @@ def parse_epub_book(base_dir, vol_name):
             re.search('(comp\d{,3}|ch\d{,3})\.html', f)]
     docs = [os.path.join(vol_contents_dir,f)
             for f in vol_contents if re.search('d\d{,4}\.html', f)]
-
+    
     parsed_persons = parse_html_persons(persons)
     parsed_preface = parse_html_preface(preface)
     parsed_title = parse_html_title(title)
@@ -110,7 +110,10 @@ def parse_html_persons(html_file):
     pd.DataFrame 
     """
     names = pd.DataFrame(columns=['first', 'last', 'suffix'])
-    html = open(html_file).read()
+    try:
+        html = open(html_file).read()
+    except IOError:
+        return 
     html = html.decode('ascii', 'ignore')
     soup = bs4.BeautifulSoup(html)
     lines = soup.findAll('li')
@@ -148,7 +151,10 @@ def parse_html_preface(html_file):
     ----------
     html_file : open file obj
     """
-    html = open(html_file).read()
+    try:
+        html = open(html_file).read()
+    except IOError:
+        return 
     html = html.decode('ascii', 'ignore')
     soup = bs4.BeautifulSoup(html)
     return {'text': soup.getText(), 'html': html}
@@ -161,7 +167,10 @@ def parse_html_title(html_file):
     ----------
     html_file : open file obj
     """
-    html = open(html_file).read()
+    try:
+        html = open(html_file).read()
+    except IOError:
+        return 
     html = html.decode('ascii', 'ignore')
     soup = bs4.BeautifulSoup(html)
     title = ' '.join([item.getText() for item in soup.findAll('h3')])
@@ -178,7 +187,10 @@ def parse_html_terms(html_file):
     ----------
     html_file : open file obj
     """
-    html = open(html_file).read()
+    try:
+        html = open(html_file).read()
+    except IOError:
+        return 
     html = html.decode('ascii', 'ignore')
     soup = bs4.BeautifulSoup(html)
     terms_list = []
@@ -207,7 +219,10 @@ def parse_html_refs(html_files, id_prefix=None):
         id_prefix=''
     ref_info = []
     for html_file in html_files:
-        html = open(html_file).read()
+        try:
+            html = open(html_file).read()
+        except IOError:
+            return 
         html = html.decode('ascii', 'ignore')
         ref_info += __parse_html_ref(html, id_prefix)
     return ref_info
@@ -257,7 +272,10 @@ def parse_html_docs(html_files, full_names=None, id_prefix=None):
         id_prefix=''
     doc_info = {}
     for html_file in html_files:
-        html = open(html_file).read()
+        try:
+            html = open(html_file).read()
+        except IOError:
+            return 
         html = html.decode('ascii', 'ignore')
         parsed_doc = __parse_html_doc(html, full_names, id_prefix)
         doc_info[parsed_doc['id']] = parsed_doc['doc']
@@ -470,7 +488,7 @@ if __name__=="__main__":
     DATA = os.getenv("DATA")
     FRUS = os.path.join(DATA, 'declass', 'frus')
     RAW = os.path.join(FRUS, 'raw')
-    import pdb; pdb.set_trace()
+    
     #parsed_vol = parse_epub_book(RAW, 'frus1958-60v04')
     #parsed_vol = parse_epub_book(RAW, 'frus1958-60v10p1')
     #parsed_vol = parse_epub_book(RAW, 'frus1961-63v05')
