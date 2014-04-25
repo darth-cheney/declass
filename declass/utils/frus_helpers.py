@@ -17,6 +17,23 @@ from collections import defaultdict
 #functions below
 
 def parse_epub_book(base_dir, vol_name):
+    """
+    Parses epub volumes from http://history.state.gov/historicaldocuments/ebooks
+    and returns a dict of all relevant sections, and info therein: persons
+    preface, terms, title, refs, docs. Note, you must first download the epub 
+    volume and then unzip it into a directory vol_name.
+
+    Parameters
+    ----------
+    base_dir : str
+        base directory where the unzipped epub volume dir lives
+    vol_name : str
+        name of the unzipped volume directory
+    
+    Returns
+    -------
+    parsed_vol : dict
+    """
     ###get all the nec paths
     vol_contents_dir = os.path.join(base_dir, vol_name, 'OEBPS')
     vol_contents = os.listdir(vol_contents_dir)
