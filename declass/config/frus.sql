@@ -36,8 +36,8 @@ create Table if not exists term(
     id VARCHAR(16),
     acronym VARCHAR(16),
     definition TEXT,
-    PRIMARY KEY id,
-    KEY acronym
+    PRIMARY KEY (id),
+    KEY (acronym)
 );
 
 /* ref table contains all the references for each doc*/
@@ -45,7 +45,7 @@ create Table if not exists ref(
     id VARCHAR(20),
     source TEXT,
     notes MEDIUMTEXT,
-    PRIMARY KEY id
+    PRIMARY KEY (id)
 );
 
 /* doc table contains all the docs and their respective info*/
@@ -63,7 +63,7 @@ create Table if not exists person_doc(
     pid VARCHAR(32),
     did VARCHAR(20),
     KEY (pid),
-    KEY did)
+    KEY (did)
 );
 
 
