@@ -1,7 +1,9 @@
 ##### various util helpers to deal with frus collection
 import re
+import yaml
 import dateutil.parser as dparser
 import subprocess
+import pymysql
 import bs4
 import BeautifulSoup as bs1
 import pandas as pd
@@ -49,11 +51,26 @@ def parse_epub_books(base_dir, exclude_names=['frus-history']):
     vol_names = [name for name in os.listdir(base_dir) if 
             os.path.isdir(name) and name not in exclude_names]
     vol_dict = {}
-    for i, vol_name in enumerate(vol_names[:2]):
+    for i, vol_name in enumerate(vol_names):
         vol_dict[vol_name] = parse_epub_book(base_dir, vol_name)
         print 'done with %s, %s volumes left'%(
                 vol_name, len(vol_names)-i-1) 
     return vol_dict
+
+def update_frus_db(login_yaml, volume):
+    """
+    updates the declassification_frus DB
+    """
+    login_info = yaml.load(open(login_yaml))
+    host_name = login_info['host_name']
+    db_name = login_info['db_name']
+    user_name = login_info['user_name']
+    pwd = login_info['pwd']
+    conn = pymysql.connect(host=host_name, user=user_name, passwd=pwd, db=db_name)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    conn.autocommit(1)
+
+
 
 def parse_epub_book(base_dir, vol_name):
     """
@@ -496,9 +513,11 @@ if __name__=="__main__":
     RAW = os.path.join(FRUS, 'raw')
     PROCESSED = os.path.join(FRUS, 'processed')
     
-    #parsed_vol = parse_epub_book(RAW, 'frus1958-60v04')
+    parsed_vol = parse_epub_book(RAW, 'frus1958-60v04')
+    import pdb; pdb.set_trace()
+    update_frus_db('/Users/danielkrasner/.declass_frus_db', parsed_vol)
     #parsed_vol = parse_epub_book(RAW, 'frus1958-60v10p1')
     #parsed_vol = parse_epub_book(RAW, 'frus1961-63v05')
 
     #download_unzip_epub_books(RAW)
-    parsed_vols = parse_epub_books(RAW)
+    #parsed_vols = parse_epub_books(RAW)
