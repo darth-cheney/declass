@@ -55,7 +55,7 @@ def parse_epub_books(base_dir, exclude_names=['frus-history'], updateDB=False,
     vol_names = [name for name in os.listdir(base_dir) if 
             os.path.isdir(name) and name not in exclude_names]
     vol_dict = {}
-    for i, vol_name in enumerate(vol_names[1:]):
+    for i, vol_name in enumerate(vol_names):
         volume = parse_epub_book(base_dir, vol_name)
         vol_dict[vol_name] = volume
         print 'done with %s, %s volumes left'%(
@@ -89,7 +89,7 @@ def update_frus_db(cursor, volume, volume_name):
         _update_table(cursor, section, key, volume_name)
 
 def _update_table(cursor, section, section_name, volume_name):
-    if section_name in ['terms', 'refs', 'persons']:
+    if section_name in ['terms', 'refs', 'persons'] and section is not None:
         for item in section:
             col_names = ','.join(item.keys())
             values = '"'+'","'.join(item.values())+'"'
@@ -100,7 +100,7 @@ def _update_table(cursor, section, section_name, volume_name):
             except ProgrammingError:
                 print 'failed to update item in section %s vol %s'%(
                         section_name, volume_name) 
-    elif section_name in ['title', 'preface']:
+    elif section_name in ['title', 'preface'] and section is not None:
         col_names = 'id,'+','.join(section.keys())
         values = '"%s","'%volume_name + '","'.join(section.values()) + '"'
         sql = 'insert ignore into %s (%s) Values(%s);'%(
@@ -173,7 +173,10 @@ def parse_epub_book(base_dir, vol_name):
     parsed_title = parse_html_title(title)
     parsed_terms = parse_html_terms(terms)
     parsed_refs = parse_html_refs(refs, id_prefix=vol_name)
-    person_keys = [item['id'] for item in parsed_persons]
+    if parsed_persons:
+        person_keys = [item['id'] for item in parsed_persons]
+    else:
+        person_keys = None
     parsed_docs = parse_html_docs(docs, person_keys, 
             id_prefix=vol_name)
     return {'persons': parsed_persons, 'preface': parsed_preface, 
@@ -210,12 +213,15 @@ def parse_html_persons(html_file):
             last_name = name_tag[0].getText().strip()
             first_name = ''
         name_id = re.sub(r'\s+', '_',last_name+' '+first_name)
+        name_id = __replace_double(name_id)
         try:
             suffix = ','.join(name_tag[0].getText().split(',')[2:])
         except IndexError:
             suffix = ''
         last_name = str(last_name.strip())
+        last_name = __replace_double(last_name)
         first_name = str(first_name.strip())
+        first_name = __replace_double(first_name)
         description = re.findall(r'</strong>(.*)</li>$', str(line))
         if description: 
             description = description[0].strip()
@@ -590,11 +596,10 @@ if __name__=="__main__":
     RAW = os.path.join(FRUS, 'raw')
     PROCESSED = os.path.join(FRUS, 'processed')
     
-    #update_frus_db('/Users/danielkrasner/.declass_frus_db', 
-    #        parsed_vol, 'frus1958-60v04')
-    #parsed_vol = parse_epub_book(RAW, 'frus1952-54Guat')
-    #parsed_vol = parse_epub_book(RAW, 'frus1958-60v10p1')
-    #parsed_vol = parse_epub_book(RAW, 'frus1961-63v05')
+    import pdb; pdb.set_trace()
+#    parsed_vol = parse_epub_book(RAW, 'frus1969-76v28')
+#    cursor = _connect_db('/Users/danielkrasner/.declass_frus_db')
+#    update_frus_db(cursor, parsed_vol, 'frus1969-76v28')
 
     #download_unzip_epub_books(RAW)
     parsed_vols = parse_epub_books(RAW, updateDB=True, 
