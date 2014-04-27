@@ -55,7 +55,7 @@ def parse_epub_books(base_dir, exclude_names=['frus-history'], updateDB=False,
     vol_names = [name for name in os.listdir(base_dir) if 
             os.path.isdir(name) and name not in exclude_names]
     vol_dict = {}
-    for i, vol_name in enumerate(vol_names):
+    for i, vol_name in enumerate(vol_names[1:]):
         volume = parse_epub_book(base_dir, vol_name)
         vol_dict[vol_name] = volume
         print 'done with %s, %s volumes left'%(
@@ -219,6 +219,7 @@ def parse_html_persons(html_file):
         description = re.findall(r'</strong>(.*)</li>$', str(line))
         if description: 
             description = description[0].strip()
+            description = __replace_double(description)
         else:
             description = ''
         names.append(
@@ -226,7 +227,13 @@ def parse_html_persons(html_file):
                     'suffix': suffix, 'description': description, 
                     'id': name_id})
     return names
-    
+
+def __replace_double(text):
+    """
+    Replaces double quoutes for easier mysql text handling.
+    """
+    return re.sub(r'"', "'", text)
+
 def parse_html_preface(html_file):
     """
     Parses preface.html from epub.
@@ -241,7 +248,8 @@ def parse_html_preface(html_file):
         return 
     html = html.decode('ascii', 'ignore')
     soup = bs4.BeautifulSoup(html)
-    return {'text': soup.getText(), 'html': re.sub('"',"'", html)}
+    text = soup.getText()
+    return {'text': __replace_double(text), 'html': __replace_double(html)}
 
 def parse_html_title(html_file):
     """
@@ -261,7 +269,7 @@ def parse_html_title(html_file):
     title = re.sub(r'(\d{4})(\d{4})', r'\1-\2', title)
     editors = '; '.join([item.getText() for item in soup.findAll('dd')])
     date = re.findall(r'(\d{4})\n', soup.getText())[0]
-    return {'title': title, 'editors':editors, 'date':date}
+    return {'title': __replace_double(title), 'editors':editors, 'date':date}
 
 def parse_html_terms(html_file):
     """
@@ -286,6 +294,7 @@ def parse_html_terms(html_file):
         text =  term.getText().split(',')
         acronym = text[0].strip()
         defin = ''.join(text[1:]).strip()
+        defin = __replace_double(defin)
         terms_list.append({'id':term_id, 'acronym': acronym, 'def': defin})
     return terms_list
 
@@ -322,6 +331,7 @@ def __parse_html_ref(html, id_prefix):
             title = soup.findAll('h4')[0].getText().strip()
             source = soup.findAll(
                     'p', {'class':'sourcenote'})[0].getText().strip()
+            source = __replace_double(source)
             doc_num = re.findall(r'Document (\d{,4})', title)[0]
             if not doc_num: continue 
         except IndexError:
@@ -329,6 +339,7 @@ def __parse_html_ref(html, id_prefix):
         try:
             notes = re.findall(r'<p>\n\s+([\w,\.\s:]+)\n\s+</p>', 
                     soup.prettify())[0]
+            notes = __replace_double(notes)
         except IndexError:
             notes = ''
         ref_info.append({'id': '%sd%s'%(id_prefix, doc_num), 
@@ -388,11 +399,13 @@ def __parse_html_doc(html, full_names, id_prefix):
     footnotes_tag = soup.find('div', {'class':'footnotes'})
     if footnotes_tag:
         footnotes = footnotes_tag.getText()
+        footnotes = __replace_double(footnotes)
         ###drop the footnotes from main body
         footnotes_tag.clear()
     else:
         footnotes = ''
     body = soup.getText()
+    body = __replace_double(body)
     names = __parse_html_person_codes(soup, full_names)
     return {'id': id_prefix+doc_id, 'doc': 
             {'title':title, 'date':date, 'footnotes': footnotes, 
@@ -579,7 +592,7 @@ if __name__=="__main__":
     
     #update_frus_db('/Users/danielkrasner/.declass_frus_db', 
     #        parsed_vol, 'frus1958-60v04')
-    #parsed_vol = parse_epub_book(RAW, 'frus1958-60v04')
+    #parsed_vol = parse_epub_book(RAW, 'frus1952-54Guat')
     #parsed_vol = parse_epub_book(RAW, 'frus1958-60v10p1')
     #parsed_vol = parse_epub_book(RAW, 'frus1961-63v05')
 
