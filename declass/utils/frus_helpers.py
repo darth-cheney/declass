@@ -14,6 +14,7 @@ from unidecode import unidecode
 from collections import defaultdict
 from pymysql import ProgrammingError
 
+from declass.utils.html import dictify
 ######################################EPUB BOOKS#############################
 #The following functions are for parsing the html wrapped inside the *.epub files
 #coming from http://history.state.gov/historicaldocuments/ebooks
@@ -183,6 +184,27 @@ def parse_epub_book(base_dir, vol_name):
             'title': parsed_title, 'terms': parsed_terms, 'refs': parsed_refs,
             'docs': parsed_docs}
 
+def parse_html_index(html_file):
+    """
+    Parses index.html from epub.
+
+    Parameters
+    ----------
+    html_file : file path 
+
+    Returns
+    -------
+    list of dicts
+    """
+    try:
+        html = open(html_file).read()
+    except IOError:
+        return 
+    html = html.decode('ascii', 'ignore')
+    soup = bs4.BeautifulSoup(html)
+    ul = soup.findAll('ul')[1]
+    return dictify(ul)
+
 
 def parse_html_persons(html_file):
     """
@@ -190,7 +212,7 @@ def parse_html_persons(html_file):
 
     Parameters
     ----------
-    html_file : open file obj
+    html_file : str, file path
 
     Returns
     -------
@@ -246,7 +268,7 @@ def parse_html_preface(html_file):
 
     Parameters
     ----------
-    html_file : open file obj
+    html_file : str, file path
     """
     try:
         html = open(html_file).read()
@@ -263,7 +285,7 @@ def parse_html_title(html_file):
 
     Parameters
     ----------
-    html_file : open file obj
+    html_file : str, file path
     """
     try:
         html = open(html_file).read()
@@ -283,7 +305,7 @@ def parse_html_terms(html_file):
 
     Parameters
     ----------
-    html_file : open file obj
+    html_file : str, file path
     """
     try:
         html = open(html_file).read()
@@ -596,13 +618,43 @@ if __name__=="__main__":
     RAW = os.path.join(FRUS, 'raw')
     PROCESSED = os.path.join(FRUS, 'processed')
     
-    import pdb; pdb.set_trace()
+    index1 = os.path.join(RAW, 'frus1969-76v28', 'OEBPS', 'index.html')
+    index2 = os.path.join(RAW, 'frus1969-76v07', 'OEBPS', 'index.html')
+    index3 = os.path.join(RAW, 'frus1964-68v31', 'OEBPS', 'index.html')
+    index4 = os.path.join(RAW, 'frus1964-68v23', 'OEBPS', 'index.html')
+    index5 = os.path.join(RAW, 'frus1977-80v13', 'OEBPS', 'index.html')
+    index6 = os.path.join(RAW, 'frus1969-76v40', 'OEBPS', 'index.html')
+    index7 = os.path.join(RAW, 'frus1969-76v30', 'OEBPS', 'index.html')
+   
+    parsed_index1 = parse_html_index(index1)
+    parsed_index2 = parse_html_index(index2)
+    parsed_index3 = parse_html_index(index3)
+    parsed_index4 = parse_html_index(index4)
+    parsed_index5 = parse_html_index(index5)
+    parsed_index6 = parse_html_index(index6)
+    parsed_index7 = parse_html_index(index7)
+    
+    from declass.utils.writers import nested_dict_to_delim
+    with open('/tmp/index1.tsv', 'w') as f:
+        nested_dict_to_delim(f, parsed_index1)
+    with open('/tmp/index2.tsv', 'w') as f:
+        nested_dict_to_delim(f, parsed_index2)
+    with open('/tmp/index3.tsv', 'w') as f:
+        nested_dict_to_delim(f, parsed_index3)
+    with open('/tmp/index4.tsv', 'w') as f:
+        nested_dict_to_delim(f, parsed_index4)
+    with open('/tmp/index5.tsv', 'w') as f:
+        nested_dict_to_delim(f, parsed_index5)
+    with open('/tmp/index6.tsv', 'w') as f:
+        nested_dict_to_delim(f, parsed_index6)
+    with open('/tmp/index7.tsv', 'w') as f:
+        nested_dict_to_delim(f, parsed_index7)
 #    parsed_vol = parse_epub_book(RAW, 'frus1969-76v28')
 #    cursor = _connect_db('/Users/danielkrasner/.declass_frus_db')
 #    update_frus_db(cursor, parsed_vol, 'frus1969-76v28')
 
     #download_unzip_epub_books(RAW)
-    parsed_vols = parse_epub_books(RAW, updateDB=True, 
-            login_yaml='/Users/danielkrasner/.declass_frus_db')
+    #parsed_vols = parse_epub_books(RAW, updateDB=True, 
+    #        login_yaml='/Users/danielkrasner/.declass_frus_db')
     #json.dump(parsed_vols, 
      #       open(os.path.join(PROCESSED, 'frus_vols.json'), 'w'))
