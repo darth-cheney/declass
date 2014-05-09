@@ -52,7 +52,6 @@ def parse_epub_books(base_dir, exclude_names=['frus-history'], updateDB=False,
     """
     if login_yaml:
         cursor = _connect_db(login_yaml)
-    os.chdir(RAW)
     vol_names = [name for name in os.listdir(base_dir) if 
             os.path.isdir(name) and name not in exclude_names]
     vol_dict = {}
@@ -184,7 +183,7 @@ def parse_epub_book(base_dir, vol_name):
             'title': parsed_title, 'terms': parsed_terms, 'refs': parsed_refs,
             'docs': parsed_docs}
 
-def parse_html_index(html_file):
+def parse_html_index(html_file, ref=None):
     """
     Parses index.html from epub.
 
@@ -202,8 +201,10 @@ def parse_html_index(html_file):
         return 
     html = html.decode('ascii', 'ignore')
     soup = bs4.BeautifulSoup(html)
-    ul = soup.findAll('ul')[1]
-    return dictify(ul)
+    ul = soup.findAll('ul', {'class':'index'})
+    if ul: 
+        ul = ul[0]
+        return dictify(ul, ref)
 
 
 def parse_html_persons(html_file):
@@ -617,38 +618,57 @@ if __name__=="__main__":
     FRUS = os.path.join(DATA, 'declass', 'frus')
     RAW = os.path.join(FRUS, 'raw')
     PROCESSED = os.path.join(FRUS, 'processed')
-    
-    index1 = os.path.join(RAW, 'frus1969-76v28', 'OEBPS', 'index.html')
-    index2 = os.path.join(RAW, 'frus1969-76v07', 'OEBPS', 'index.html')
-    index3 = os.path.join(RAW, 'frus1964-68v31', 'OEBPS', 'index.html')
-    index4 = os.path.join(RAW, 'frus1964-68v23', 'OEBPS', 'index.html')
-    index5 = os.path.join(RAW, 'frus1977-80v13', 'OEBPS', 'index.html')
-    index6 = os.path.join(RAW, 'frus1969-76v40', 'OEBPS', 'index.html')
-    index7 = os.path.join(RAW, 'frus1969-76v30', 'OEBPS', 'index.html')
    
-    parsed_index1 = parse_html_index(index1)
-    parsed_index2 = parse_html_index(index2)
-    parsed_index3 = parse_html_index(index3)
-    parsed_index4 = parse_html_index(index4)
-    parsed_index5 = parse_html_index(index5)
-    parsed_index6 = parse_html_index(index6)
-    parsed_index7 = parse_html_index(index7)
+
+    vol_names = [name for name in os.listdir(RAW) if 
+            os.path.isdir(os.path.join(RAW,name)) and name not in 
+            ['frus', 'epub_orig', 'frus-history']]
+    ok_vols = 0
+    empty_vols = 0
+    for vol in vol_names:
+        index_path  = os.path.join(RAW, vol, 'OEBPS', 'index.html')
+        ref_regex = re.compile(r'd\d{,3}\.html')
+        parsed_index = parse_html_index(index_path, ref_regex)
+        if parsed_index:
+            import pdb; pdb.set_trace()
+            ok_vols+=1
+        else:
+            empty_vols+=1
+        print 'volume %s index parsed ok'%vol
+    print 'ok '+str(ok_vols)
+    print 'empty '+str(empty_vols)
     
-    from declass.utils.writers import nested_dict_to_delim
-    with open('/tmp/index1.tsv', 'w') as f:
-        nested_dict_to_delim(f, parsed_index1)
-    with open('/tmp/index2.tsv', 'w') as f:
-        nested_dict_to_delim(f, parsed_index2)
-    with open('/tmp/index3.tsv', 'w') as f:
-        nested_dict_to_delim(f, parsed_index3)
-    with open('/tmp/index4.tsv', 'w') as f:
-        nested_dict_to_delim(f, parsed_index4)
-    with open('/tmp/index5.tsv', 'w') as f:
-        nested_dict_to_delim(f, parsed_index5)
-    with open('/tmp/index6.tsv', 'w') as f:
-        nested_dict_to_delim(f, parsed_index6)
-    with open('/tmp/index7.tsv', 'w') as f:
-        nested_dict_to_delim(f, parsed_index7)
+#    index1 = os.path.join(RAW, 'frus1969-76v28', 'OEBPS', 'index.html')
+#    index2 = os.path.join(RAW, 'frus1969-76v07', 'OEBPS', 'index.html')
+#    index3 = os.path.join(RAW, 'frus1964-68v31', 'OEBPS', 'index.html')
+#    index4 = os.path.join(RAW, 'frus1964-68v23', 'OEBPS', 'index.html')
+#    index5 = os.path.join(RAW, 'frus1977-80v13', 'OEBPS', 'index.html')
+#    index6 = os.path.join(RAW, 'frus1969-76v40', 'OEBPS', 'index.html')
+#    index7 = os.path.join(RAW, 'frus1969-76v30', 'OEBPS', 'index.html')
+#   
+#    parsed_index1 = parse_html_index(index1)
+#    parsed_index2 = parse_html_index(index2)
+#    parsed_index3 = parse_html_index(index3)
+#    parsed_index4 = parse_html_index(index4)
+#    parsed_index5 = parse_html_index(index5)
+#    parsed_index6 = parse_html_index(index6)
+#    parsed_index7 = parse_html_index(index7)
+#    
+#    from declass.utils.writers import nested_dict_to_delim
+#    with open('/tmp/index1.tsv', 'w') as f:
+#        nested_dict_to_delim(f, parsed_index1)
+#    with open('/tmp/index2.tsv', 'w') as f:
+#        nested_dict_to_delim(f, parsed_index2)
+#    with open('/tmp/index3.tsv', 'w') as f:
+#        nested_dict_to_delim(f, parsed_index3)
+#    with open('/tmp/index4.tsv', 'w') as f:
+#        nested_dict_to_delim(f, parsed_index4)
+#    with open('/tmp/index5.tsv', 'w') as f:
+#        nested_dict_to_delim(f, parsed_index5)
+#    with open('/tmp/index6.tsv', 'w') as f:
+#        nested_dict_to_delim(f, parsed_index6)
+#    with open('/tmp/index7.tsv', 'w') as f:
+#        nested_dict_to_delim(f, parsed_index7)
 #    parsed_vol = parse_epub_book(RAW, 'frus1969-76v28')
 #    cursor = _connect_db('/Users/danielkrasner/.declass_frus_db')
 #    update_frus_db(cursor, parsed_vol, 'frus1969-76v28')
